@@ -28,8 +28,9 @@ namespace ABCPharmacyAPI.Controllers
         [Route("Add")]
         public async Task<IActionResult> AddMedicine(MedicineModel medicine)
         {
-            await _medicineRepository.AddMedicineAsync(medicine);
-            return Ok(new { message = "Medicine added successfully" });
+            var response = await _medicineRepository.AddMedicineAsync(medicine);
+            //return Ok(new { message = "Medicine added successfully" });
+            return Ok(response);
         }
     }
 }

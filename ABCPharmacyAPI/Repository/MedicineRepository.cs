@@ -12,14 +12,28 @@ namespace ABCPharmacyAPI.Repository
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public async Task<int> AddMedicineAsync(MedicineModel model)
+        public async Task<ResponseModel> AddMedicineAsync(MedicineModel model)
         {
             try
             {
                 var counter = 0;
-                var medicines = await GetAllAsync();
+                var response = await GetAllAsync();
+
+                var medicines = response.Data as List<MedicineModel> ?? new List<MedicineModel>();
 
                 counter = medicines.Count;
+
+                var checkDuplicate = medicines.Where(o => o.MedicineName == model.MedicineName && o.Brand == model.Brand).ToList();
+
+                if (checkDuplicate.Any())
+                {
+                    return new ResponseModel
+                    {
+                        Message = "Duplicate medicine entered.",
+                        Data = checkDuplicate,
+                        StatusCode = System.Net.HttpStatusCode.Ambiguous
+                    };
+                }
 
                 model.Id = medicines.Count + 1;
                 medicines.Add(model);
@@ -30,18 +44,26 @@ namespace ABCPharmacyAPI.Repository
                 }
 
                 counter = medicines.Count;
-                medicines = await GetAllAsync();
-                if (counter == medicines.Count)
+                response = await GetAllAsync();
+                medicines = response.Data as List<MedicineModel> ?? new List<MedicineModel>();
+                //if (counter == medicines.Count)
+                //{
+                //    return 1;
+                //}
+                //else
+                //    return 0;
+
+                return new ResponseModel
                 {
-                    return 1;
-                }
-                else
-                    return 0;
+                    Message = "Medicine Added ✅",
+                    Data = checkDuplicate,
+                    StatusCode = System.Net.HttpStatusCode.OK
+                };
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -49,7 +71,7 @@ namespace ABCPharmacyAPI.Repository
         /// Get all the Medicines saved in data source
         /// </summary>
         /// <returns></returns>
-        public async Task<List<MedicineModel>> GetAllAsync()
+        public async Task<ResponseModel> GetAllAsync()
         {
             try
             {
@@ -60,13 +82,19 @@ namespace ABCPharmacyAPI.Repository
 
                 using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    return await JsonSerializer.DeserializeAsync<List<MedicineModel>>(stream)
+                    var result = await JsonSerializer.DeserializeAsync<List<MedicineModel>>(stream)
                            ?? new List<MedicineModel>();
+                    return new ResponseModel
+                    {
+                        Data = result,
+                        StatusCode = System.Net.HttpStatusCode.OK,
+                        Message = "Total items: " + result.Count
+                    };
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                throw;
             }
         }
 
